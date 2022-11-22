@@ -1,15 +1,21 @@
-from sqlalchemy import Table, Column
-from sqlalchemy.sql.sqltypes import String
-from config.db import engine, meta_data
+from sqlalchemy import Column, Integer, String, ForeignKey, SMALLINT
+from sqlalchemy.orm import relationship
+from config.db import Base
 
-users = Table("users", meta_data,
-            Column("id", String, primary_key=True),
-            Column("email", String, nullable=False),
-            Column("password", String, nullable=False),
-            Column("first_name", String, nullable=False),
-            Column("last_name", String, nullable=False),
-            Column("state", String, nullable=False),
-            Column("photo", String, nullable=True)
-        )
+class User(Base):
+    __tablename__ = "users"
+    id = Column(String(24), primary_key=True)
+    email = Column(String(50), nullable=False)
+    password = Column(String(100), nullable=False)
+    first_name = Column(String(50), nullable=False)
+    last_name = Column(String(50), nullable=False)
+    state = Column(SMALLINT, nullable=False)
+    photo = Column(String(500), nullable=True)
+    role_id = Column(Integer, ForeignKey("roles.id"))
+    role = relationship("Role")
 
-meta_data.create_all(engine)
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(15), nullable=False)
+    description = Column(String(50), nullable=False)

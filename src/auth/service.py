@@ -1,16 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Union
-
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
 from passlib.context import CryptContext
-from src.auth.schemas import UpdateUserProfile
+from src.auth.schemas import UpdateUserProfile, User, UserProfile
+from src.auth.models import User
 from config.setup import settings
-
-from config.db import engine
-from src.auth.models import users
-
-from src.auth.exceptions import disabled_user_exception
+from src.auth.exceptions import disabled_user_exception, user_not_found_exception
+from config.db import Session
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -21,30 +18,34 @@ def verify_password(plain_password, hashed_password):
     except:
         return False
 
-def authenticate_user(email: str, password: str):
-    user = get_user(email)
+def authenticate_user(db: Session, email: str, password: str) -> User:
+    user = get_user_by_email(db, email)
     if not user:
         return False
-    if user["state"] != 1:
+    if user.state != 1:
         raise disabled_user_exception
-    if not verify_password(password, user["password"]):
+    if not verify_password(password, user.password):
         return False
     return user
 
-def update_user_profile(id: str, form_data: UpdateUserProfile):
+def update_user_profile(db: Session, id: str, form_data: UpdateUserProfile) -> UserProfile:
+    user = get_user_profile(db, id)
+    if not user:
+        raise user_not_found_exception
     encrypt_password = pwd_context.hash(form_data.password)
-    with engine.connect() as conn:
-        conn.execute(users.update().values(first_name=form_data.first_name, last_name=form_data.last_name, 
-        password=encrypt_password, photo=form_data.photo).where(users.c["id"] == id))
-    return get_user_profile(id)
+    db.query(User) \
+        .filter(User.id == id) \
+        .update({"first_name":form_data.first_name, "last_name":form_data.last_name, "password": encrypt_password, "photo": form_data.photo }) 
+    db.commit()
+    return user
 
-def get_user_profile(id: str):
-    return __get_user_by_field("id", id)
+def get_user_profile(db: Session, id: str) -> UserProfile:
+    return db.query(User).filter(User.id == id).first()
 
-def get_user(email: str):
-    return __get_user_by_field("email", email)
+def get_user_by_email(db: Session, email: str) -> User:
+    return db.query(User).filter(User.email == email).first()
 
-def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None) -> str:
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -53,7 +54,3 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.PROJECT_SECRET_KEY , algorithm=settings.PROJECT_PROJECT_ALGORITHM)
     return encoded_jwt
-
-def __get_user_by_field(field: str, value: str):
-    with engine.connect() as conn:
-        return conn.execute(users.select().where(users.c[field] == value)).first()
