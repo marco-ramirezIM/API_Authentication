@@ -30,8 +30,6 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
 
 def update_user_profile(db: Session, id: str, form_data: UpdateUserProfile) -> UserProfile:
     user = get_user_profile(db, id)
-    if not user:
-        raise user_not_found_exception
     encrypt_password = pwd_context.hash(form_data.password)
     db.query(User) \
         .filter(User.id == id) \
@@ -40,7 +38,10 @@ def update_user_profile(db: Session, id: str, form_data: UpdateUserProfile) -> U
     return user
 
 def get_user_profile(db: Session, id: str) -> UserProfile:
-    return db.query(User).filter(User.id == id).first()
+    user = db.query(User).filter(User.id == id).first()
+    if not user:
+        raise user_not_found_exception
+    return user
 
 def get_user_by_email(db: Session, email: str) -> User:
     return db.query(User).filter(User.email == email).first()
