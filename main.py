@@ -8,7 +8,7 @@ app = FastAPI(
     version=settings.PROJECT_VERSION,
     docs_url=settings.URL_PREFIX + '/docs',
     redoc_url=settings.URL_PREFIX + '/redoc',
-    openapi_url="/auth" + settings.URL_PREFIX + '/openapi.json'
+    openapi_url=settings.URL_PREFIX + '/openapi.json'
 )
 
 app.include_router(auth, prefix=settings.URL_PREFIX)
