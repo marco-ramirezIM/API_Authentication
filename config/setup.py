@@ -10,7 +10,7 @@ class AppSettings:
     #Api settings
     PROJECT_NAME = "ISA 2 - Authentication API"
     PROJECT_VERSION = "0.0.1"
-    PROJECT_DESCRIPTION = "REST API for iMetrix Authentication using FastAPI and Postgresql"
+    PROJECT_DESCRIPTION = "REST API for iMetrix Authentication V2"
     URL_PREFIX="/api/v1"
 
     #Auth settings
