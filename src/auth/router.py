@@ -4,7 +4,7 @@ from src.auth.schemas import Login, Token, UserProfile, UpdateUserProfile,TokenD
 from fastapi import APIRouter, Form, Depends
 import src.auth.service as service
 from config.setup import settings
-from src.auth.exceptions import incorrect_crendentilas_exception
+from src.auth.exceptions import incorrect_credentials_exception
 import src.auth.dependencies as dependencies
 import src.dependencies as dp
 from config.db import Session
@@ -17,7 +17,7 @@ async def login(form_data: Login, db: Session = Depends(dp.get_db)):
     try:
         user = service.authenticate_user(db, form_data.email, form_data.password)
         if not user:
-            raise incorrect_crendentilas_exception
+            raise incorrect_credentials_exception
         access_token_expires = timedelta(minutes=settings.PROJECT_ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = service.create_access_token(
             data={"sub": user.email, "role": user.role.name } , expires_delta=access_token_expires
